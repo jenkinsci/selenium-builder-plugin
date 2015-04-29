@@ -6,6 +6,14 @@
             <f:entry title="${%Script File}" field="scriptFile">
                 <f:textbox id="scriptFile"/>
             </f:entry>
+            <f:optionalBlock field="parallelSettings" checked="${instance.parallelSettings != null}"
+                             title="${%Run build in parallel?}">
+                <j:set var="parallelSettings" value="${instance.parallelSettings}"/>
+                <f:entry title="${%Thread pool size}" field="threadPoolSize">
+                    <f:textbox value="${parallelSettings.threadPoolSize}"/>
+                </f:entry>
+
+            </f:optionalBlock>
         </f:section>
     </f:block>
 </j:jelly>

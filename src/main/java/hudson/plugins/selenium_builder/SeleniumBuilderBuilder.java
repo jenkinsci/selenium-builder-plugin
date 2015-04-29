@@ -34,9 +34,12 @@ public class SeleniumBuilderBuilder extends Builder implements Serializable {
 
     private String scriptFile;
 
+    private ParallelSettings parallelSettings;
+
     @DataBoundConstructor
-    public SeleniumBuilderBuilder(String scriptFile) {
+    public SeleniumBuilderBuilder(String scriptFile, ParallelSettings parallelSettings) {
         this.scriptFile = scriptFile;
+        this.parallelSettings = parallelSettings;
     }
 
     @Override
@@ -48,7 +51,7 @@ public class SeleniumBuilderBuilder extends Builder implements Serializable {
 
         try {
             EnvVars env = build.getEnvironment(listener);
-            return Computer.currentComputer().getChannel().call(new SeleniumBuilderInvoker(env, build.getWorkspace(), listener));
+            return Computer.currentComputer().getChannel().call(new SeleniumBuilderInvoker(env, build.getWorkspace(), listener, parallelSettings));
         } catch (IOException e) {
             throw e;
         } catch (InterruptedException e) {
@@ -61,6 +64,14 @@ public class SeleniumBuilderBuilder extends Builder implements Serializable {
 
     public String getScriptFile() {
         return scriptFile;
+    }
+
+    public ParallelSettings getParallelSettings() {
+        return parallelSettings;
+    }
+
+    public void setParallelSettings(ParallelSettings parallelSettings) {
+        this.parallelSettings = parallelSettings;
     }
 
     @Extension
@@ -78,22 +89,24 @@ public class SeleniumBuilderBuilder extends Builder implements Serializable {
     }
 
     private class SeleniumBuilderInvoker implements Serializable, Callable<Boolean, Exception> {
-        private BuildListener listener;
-        private EnvVars env;
-        private FilePath workspace;
+        private final ParallelSettings parallelSettings;
+        private final BuildListener listener;
+        private final EnvVars env;
+        private final FilePath workspace;
 
 
-        public SeleniumBuilderInvoker(EnvVars env, FilePath workspace, BuildListener listener) {
+        public SeleniumBuilderInvoker(EnvVars env, FilePath workspace, BuildListener listener, ParallelSettings parallelSettings) {
             this.env = env;
             this.workspace = workspace;
             this.listener = listener;
+            this.parallelSettings = parallelSettings;
         }
 
         public Boolean call() throws InterruptedException, IOException {
 
             SeleniumBuilderManager seleniumBuilderManager = new SeleniumBuilderManager();
             return seleniumBuilderManager.executeSeleniumBuilder(
-                    new File(workspace.getRemote(), getScriptFile()), env, listener.getLogger());
+                    new File(workspace.getRemote(), getScriptFile()), env, listener.getLogger(), parallelSettings == null ? null : parallelSettings.getThreadPoolSize());
         }
     }
 }
